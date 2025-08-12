@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type RequestHandler } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth";
@@ -9,7 +9,7 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 const ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 app.use(cors({ origin: ORIGIN, credentials: true }));
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser() as unknown as RequestHandler);
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 app.use("/auth", authRouter);
 app.use("/me", meRouter);
