@@ -18,6 +18,8 @@ model User {
 model Progression {
   id        String   @id @default(cuid())
   name      String?
+  key       String?
+  roman     String?
   chords    String[] // 4 chord names
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
