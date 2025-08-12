@@ -1,6 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+
 export interface AuthedRequest extends Request { userId?: string; }
+
 export function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const token = (req as any).cookies?.token;
   if (!token) return res.status(401).json({ error: "unauthenticated" });
