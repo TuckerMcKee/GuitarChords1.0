@@ -6,7 +6,8 @@
     "dev": "npm run dev -w client & npm run dev -w server",
     "build": "npm -w client run build && npm -w server run build",
     "format": "prettier -w .",
-    "lint": "echo \"(add your linter of choice)\""
+    "lint": "echo \"(add your linter of choice)\"",
+    "local": "bash scripts/run-local.sh"
   },
   "devDependencies": {
     "prettier": "^3.3.3"
