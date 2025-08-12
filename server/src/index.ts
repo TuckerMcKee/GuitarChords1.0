@@ -1,0 +1,15 @@
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import authRouter from "./routes/auth";
+import progRouter from "./routes/progressions";
+const app = express();
+const PORT = parseInt(process.env.PORT || "3001", 10);
+const ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+app.use(cors({ origin: ORIGIN, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+app.get("/healthz", (_req, res) => res.json({ ok: true }));
+app.use("/auth", authRouter);
+app.use("/progressions", progRouter);
+app.listen(PORT, () => console.log(`API listening on :${PORT}`));
