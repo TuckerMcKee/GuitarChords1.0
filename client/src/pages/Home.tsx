@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { generateProgression, KEYS, ROMAN_TEMPLATES } from "../lib/chords";
+import { generateProgression, KEYS } from "../lib/chords";
 import ChordDiagram from "../components/ChordDiagram";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -7,16 +7,16 @@ import { api } from "../lib/api";
 export default function Home({ user }: { user: any | null }) {
   const [name, setName] = useState("My Progression");
   const [key, setKey] = useState(KEYS[0]);
-  const randomTemplate = () => ROMAN_TEMPLATES[Math.floor(Math.random() * ROMAN_TEMPLATES.length)];
-  const [roman, setRoman] = useState(randomTemplate());
-  const [chords, setChords] = useState<string[]>(generateProgression(key, roman));
+  const initial = generateProgression(key);
+  const [roman, setRoman] = useState(initial.roman);
+  const [chords, setChords] = useState<string[]>(initial.chords);
   const [saved, setSaved] = useState<any[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const regenerate = () => {
-    const newRoman = randomTemplate();
-    setRoman(newRoman);
-    setChords(generateProgression(key, newRoman));
+    const next = generateProgression(key);
+    setRoman(next.roman);
+    setChords(next.chords);
   };
   const editChord = (i:number, value:string) => {
     const arr = [...chords]; arr[i] = value; setChords(arr);
@@ -25,6 +25,11 @@ export default function Home({ user }: { user: any | null }) {
     const res = await api.get("/progressions"); setSaved(res.data);
   };
   useEffect(()=>{ if(user) loadSaves(); },[user]);
+  useEffect(()=>{
+    const next = generateProgression(key);
+    setRoman(next.roman);
+    setChords(next.chords);
+  },[key]);
 
   const save = async () => {
     await api.post("/progressions", { name, key, roman, chords });
@@ -68,7 +73,7 @@ export default function Home({ user }: { user: any | null }) {
           <ul>
             {saved.map((p: any) => (
               <li key={p.id}>
-                <button onClick={()=>{setName(p.name||"");setKey(p.key||KEYS[0]);setRoman(p.roman||ROMAN_TEMPLATES[0]);setChords(p.chords);}}>{p.name || p.id}</button>
+                <button onClick={()=>{setName(p.name||"");setKey(p.key||KEYS[0]);setRoman(p.roman||"");setChords(p.chords);}}>{p.name || p.id}</button>
                 <button onClick={()=>{api.delete(`/progressions/${p.id}`);loadSaves();}}>Delete</button>
               </li>
             ))}
