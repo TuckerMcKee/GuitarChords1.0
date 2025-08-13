@@ -156,7 +156,11 @@ function normalizeRoot(raw: string): string {
     .replace("Eb", "D#")
     .replace("Gb", "F#")
     .replace("Ab", "G#")
-    .replace("Bb", "A#");
+    .replace("Bb", "A#")
+    .replace("Cb", "B")
+    .replace("Fb", "E")
+    .replace("E#", "F")
+    .replace("B#", "C");
 }
 
 function getFormula(suffix: string): number[] | null {
@@ -164,6 +168,33 @@ function getFormula(suffix: string): number[] | null {
   const keys = Object.keys(CHORD_FORMULAS).sort((a, b) => b.length - a.length);
   const key = keys.find((k) => s === k);
   return key ? CHORD_FORMULAS[key] : null;
+}
+
+function reduceFormula(formula: number[]): number[][] {
+  const optional = [7, 14, 17, 21];
+  const results: number[][] = [];
+  function helper(curr: number[], idx: number) {
+    const uniq = Array.from(new Set(curr));
+    if (uniq.length <= 4 && uniq.length >= 3) {
+      results.push(uniq);
+    }
+    for (let i = idx; i < optional.length; i++) {
+      const iv = optional[i];
+      if (curr.includes(iv)) {
+        helper(curr.filter((n) => n !== iv), i + 1);
+      }
+    }
+  }
+  helper(formula, 0);
+  const seen = new Set<string>();
+  return results
+    .filter((arr) => {
+      const key = arr.join(",");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.length - a.length);
 }
 
 function searchFingering(notes: number[]): Chord | null {
@@ -231,7 +262,8 @@ function searchFingering(notes: number[]): Chord | null {
 }
 
 export function getChordDiagram(name: string): Chord | null {
-  const match = name.match(/^([A-G](?:#|b)?)(.*)$/);
+  const main = name.split("/")[0];
+  const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match) return null;
   const [, rawRoot, suffix] = match;
   const root = normalizeRoot(rawRoot);
@@ -240,6 +272,14 @@ export function getChordDiagram(name: string): Chord | null {
   const rootIndex = CHROMA.indexOf(root);
   const formula = getFormula(suffix);
   if (rootIndex < 0 || !formula) return null;
-  const notes = Array.from(new Set(formula.map((i) => (rootIndex + i) % 12)));
-  return searchFingering(notes);
+  const formulas = [formula];
+  if (formula.length > 4) {
+    formulas.push(...reduceFormula(formula));
+  }
+  for (const f of formulas) {
+    const notes = Array.from(new Set(f.map((i) => (rootIndex + i) % 12)));
+    const chord = searchFingering(notes);
+    if (chord) return chord;
+  }
+  return null;
 }
