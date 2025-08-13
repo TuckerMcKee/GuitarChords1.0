@@ -156,7 +156,11 @@ function normalizeRoot(raw: string): string {
     .replace("Eb", "D#")
     .replace("Gb", "F#")
     .replace("Ab", "G#")
-    .replace("Bb", "A#");
+    .replace("Bb", "A#")
+    .replace("Cb", "B")
+    .replace("Fb", "E")
+    .replace("E#", "F")
+    .replace("B#", "C");
 }
 
 function getFormula(suffix: string): number[] | null {
@@ -231,7 +235,8 @@ function searchFingering(notes: number[]): Chord | null {
 }
 
 export function getChordDiagram(name: string): Chord | null {
-  const match = name.match(/^([A-G](?:#|b)?)(.*)$/);
+  const main = name.split("/")[0];
+  const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match) return null;
   const [, rawRoot, suffix] = match;
   const root = normalizeRoot(rawRoot);
