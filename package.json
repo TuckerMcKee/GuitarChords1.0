@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": ["client", "server"],
   "scripts": {
-    "dev": "npm run dev -w client & npm run dev -w server",
+    "dev": "bash scripts/run-local.sh",
+    "dev:workspaces": "npm run dev -w client & npm run dev -w server",
     "build": "npm -w client run build && npm -w server run build",
     "format": "prettier -w .",
     "lint": "echo \"(add your linter of choice)\"",

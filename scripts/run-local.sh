@@ -15,10 +15,15 @@ else
   docker start "$DB_CONTAINER_NAME"
 fi
 
-pushd server >/dev/null
-if [ -f .env ]; then
-  npx prisma db push >/dev/null
-fi
-popd >/dev/null
+# install dependencies for all workspaces
+npm install >/dev/null
 
-npm run dev
+# ensure prisma client is generated
+npm run prisma:generate -w server >/dev/null
+
+# apply database migrations when env file is present
+if [ -f server/.env ]; then
+  npm run prisma:migrate -w server >/dev/null
+fi
+
+npm run dev:workspaces
