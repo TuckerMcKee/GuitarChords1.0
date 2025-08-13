@@ -15,6 +15,12 @@ else
   docker start "$DB_CONTAINER_NAME"
 fi
 
+# install dependencies for all workspaces
+npm install >/dev/null
+
+# ensure prisma client is generated
+npm run prisma:generate -w server >/dev/null
+
 pushd server >/dev/null
 if [ -f .env ]; then
   npx prisma db push >/dev/null
