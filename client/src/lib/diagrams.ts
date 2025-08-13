@@ -197,7 +197,7 @@ function reduceFormula(formula: number[]): number[][] {
     .sort((a, b) => b.length - a.length);
 }
 
-function searchFingering(notes: number[]): Chord | null {
+function searchFingering(notes: number[], bass: number | null): Chord | null {
   const maxFret = 12;
   for (let base = 0; base <= maxFret - 4; base++) {
     const options: number[][] = [];
@@ -223,13 +223,24 @@ function searchFingering(notes: number[]): Chord | null {
         const sounding = assign.filter((f) => f >= 0).length;
         if (sounding < 3) return;
         const covered = new Set<number>();
+        let bassFound = bass === null;
+        let lowest = Infinity;
+        let lowestPitchClass = -1;
         for (let s = 0; s < 6; s++) {
           const fret = assign[s];
           if (fret >= 0) {
-            covered.add((STRING_PITCHES[s] + fret) % 12);
+            const abs = STRING_PITCHES[s] + fret;
+            const pitch = abs % 12;
+            covered.add(pitch);
+            if (abs < lowest) {
+              lowest = abs;
+              lowestPitchClass = pitch;
+            }
+            if (bass !== null && pitch === bass) bassFound = true;
           }
         }
         for (const n of notes) if (!covered.has(n)) return;
+        if (!bassFound || (bass !== null && lowestPitchClass !== bass)) return;
         result = assign.slice();
         return;
       }
@@ -262,23 +273,26 @@ function searchFingering(notes: number[]): Chord | null {
 }
 
 export function getChordDiagram(name: string): Chord | null {
-  const main = name.split("/")[0];
+  const [main, bassToken] = name.split("/");
   const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match) return null;
   const [, rawRoot, suffix] = match;
   const root = normalizeRoot(rawRoot);
   const openName = root + suffix;
-  if (OPEN_CHORDS[openName]) return OPEN_CHORDS[openName];
+  if (!bassToken && OPEN_CHORDS[openName]) return OPEN_CHORDS[openName];
   const rootIndex = CHROMA.indexOf(root);
   const formula = getFormula(suffix);
   if (rootIndex < 0 || !formula) return null;
+  const bassIndex = bassToken ? CHROMA.indexOf(normalizeRoot(bassToken)) : null;
+  if (bassToken && bassIndex === -1) return null;
   const formulas = [formula];
   if (formula.length > 4) {
     formulas.push(...reduceFormula(formula));
   }
   for (const f of formulas) {
     const notes = Array.from(new Set(f.map((i) => (rootIndex + i) % 12)));
-    const chord = searchFingering(notes);
+    if (bassIndex !== null && !notes.includes(bassIndex)) notes.push(bassIndex);
+    const chord = searchFingering(notes, bassIndex);
     if (chord) return chord;
   }
   return null;

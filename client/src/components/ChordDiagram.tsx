@@ -8,11 +8,12 @@ export default function ChordDiagram({ chordName, id }: { chordName: string; id:
     if (!el) return;
     el.innerHTML = "";
     const chart = new SVGuitarChord(el);
-    const diagram = getChordDiagram(chordName);
+    const name = chordName.trim();
+    const diagram = getChordDiagram(name);
     if (diagram) {
-      chart.chord({ ...diagram, title: chordName }).draw();
+      chart.chord({ ...diagram, title: name }).draw();
     } else {
-      chart.chord({ fingers: [], barres: [], title: chordName }).draw();
+      chart.chord({ fingers: [], barres: [], title: name }).draw();
     }
   }, [chordName, id]);
   return <div id={id} style={{ width: 180, height: 220 }} />;
