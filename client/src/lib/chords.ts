@@ -15,7 +15,9 @@ export const KEYS = [
   "F",
 ];
 
-const CHROMA = [
+const FLAT_KEYS = ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"];
+
+const CHROMA_SHARP = [
   "C",
   "C#",
   "D",
@@ -27,6 +29,21 @@ const CHROMA = [
   "G#",
   "A",
   "A#",
+  "B",
+];
+
+const CHROMA_FLAT = [
+  "C",
+  "Db",
+  "D",
+  "Eb",
+  "E",
+  "F",
+  "Gb",
+  "G",
+  "Ab",
+  "A",
+  "Bb",
   "B",
 ];
 
@@ -74,8 +91,9 @@ function normalizeKey(k: string) {
     .replace("Bb", "A#");
 }
 
-function transpose(keyIndex: number, semis: number) {
-  return CHROMA[(keyIndex + semis + 1200) % 12];
+function transpose(keyIndex: number, semis: number, useFlats = false) {
+  const chroma = useFlats ? CHROMA_FLAT : CHROMA_SHARP;
+  return chroma[(keyIndex + semis + 1200) % 12];
 }
 
 function getSingleDegree(token: string) {
@@ -91,8 +109,9 @@ function getSingleDegree(token: string) {
   return { semis, minor };
 }
 
-function parseDegreeChain(chain: string) {
+function parseDegreeChain(chain: string, key: string) {
   const parts = chain.split("/");
+  const target = parts[parts.length - 1];
   let info = getSingleDegree(parts.pop() as string);
   if (!info) return null;
   let semis = info.semis;
@@ -104,18 +123,25 @@ function parseDegreeChain(chain: string) {
     minor = p.minor;
   }
   semis = ((semis % 12) + 12) % 12;
-  return { semis, minor };
+  const preferFlats = target.includes("b") || FLAT_KEYS.includes(key);
+  return { semis, minor, preferFlats };
 }
 
-export function generateProgression(key: string, length = 4): { chords: ChordName[]; roman: string } {
+export function generateProgression(
+  key: string,
+  length = 4,
+): {
+  chords: ChordName[];
+  roman: string;
+} {
   const chosenKey = KEYS.includes(key) ? key : KEYS[0];
   const norm = normalizeKey(chosenKey);
-  const keyIndex = CHROMA.indexOf(norm);
+  const keyIndex = CHROMA_SHARP.indexOf(norm);
   const romans: string[] = [];
   const chords: string[] = [];
   for (let i = 0; i < length; i++) {
     const base = DEGREE_POOL[Math.floor(Math.random() * DEGREE_POOL.length)];
-    const info = parseDegreeChain(base);
+    const info = parseDegreeChain(base, chosenKey);
     if (!info) {
       romans.push(base);
       chords.push("");
@@ -123,16 +149,20 @@ export function generateProgression(key: string, length = 4): { chords: ChordNam
     }
     const suffixes = info.minor ? MINOR_SUFFIXES : MAJOR_SUFFIXES;
     const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-    const root = transpose(keyIndex, info.semis);
+    const root = transpose(keyIndex, info.semis, info.preferFlats);
     let chord = `${root}${info.minor ? "m" : ""}${suffix}`;
     let roman = base + suffix;
     const invChance = Math.random();
     if (invChance < 0.33) {
-      const third = transpose(keyIndex, info.semis + (info.minor ? 3 : 4));
+      const third = transpose(
+        keyIndex,
+        info.semis + (info.minor ? 3 : 4),
+        info.preferFlats,
+      );
       chord += `/${third}`;
       roman += `/${third}`;
     } else if (invChance < 0.66) {
-      const fifth = transpose(keyIndex, info.semis + 7);
+      const fifth = transpose(keyIndex, info.semis + 7, info.preferFlats);
       chord += `/${fifth}`;
       roman += `/${fifth}`;
     }
