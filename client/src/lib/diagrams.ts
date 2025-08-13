@@ -170,6 +170,33 @@ function getFormula(suffix: string): number[] | null {
   return key ? CHORD_FORMULAS[key] : null;
 }
 
+function reduceFormula(formula: number[]): number[][] {
+  const optional = [7, 14, 17, 21];
+  const results: number[][] = [];
+  function helper(curr: number[], idx: number) {
+    const uniq = Array.from(new Set(curr));
+    if (uniq.length <= 4 && uniq.length >= 3) {
+      results.push(uniq);
+    }
+    for (let i = idx; i < optional.length; i++) {
+      const iv = optional[i];
+      if (curr.includes(iv)) {
+        helper(curr.filter((n) => n !== iv), i + 1);
+      }
+    }
+  }
+  helper(formula, 0);
+  const seen = new Set<string>();
+  return results
+    .filter((arr) => {
+      const key = arr.join(",");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.length - a.length);
+}
+
 function searchFingering(notes: number[]): Chord | null {
   const maxFret = 12;
   for (let base = 0; base <= maxFret - 4; base++) {
@@ -245,6 +272,14 @@ export function getChordDiagram(name: string): Chord | null {
   const rootIndex = CHROMA.indexOf(root);
   const formula = getFormula(suffix);
   if (rootIndex < 0 || !formula) return null;
-  const notes = Array.from(new Set(formula.map((i) => (rootIndex + i) % 12)));
-  return searchFingering(notes);
+  const formulas = [formula];
+  if (formula.length > 4) {
+    formulas.push(...reduceFormula(formula));
+  }
+  for (const f of formulas) {
+    const notes = Array.from(new Set(f.map((i) => (rootIndex + i) % 12)));
+    const chord = searchFingering(notes);
+    if (chord) return chord;
+  }
+  return null;
 }
