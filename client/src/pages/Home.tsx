@@ -7,12 +7,17 @@ import { api } from "../lib/api";
 export default function Home({ user }: { user: any | null }) {
   const [name, setName] = useState("My Progression");
   const [key, setKey] = useState(KEYS[0]);
-  const [roman, setRoman] = useState(ROMAN_TEMPLATES[0]);
+  const randomTemplate = () => ROMAN_TEMPLATES[Math.floor(Math.random() * ROMAN_TEMPLATES.length)];
+  const [roman, setRoman] = useState(randomTemplate());
   const [chords, setChords] = useState<string[]>(generateProgression(key, roman));
   const [saved, setSaved] = useState<any[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const regenerate = () => setChords(generateProgression(key, roman));
+  const regenerate = () => {
+    const newRoman = randomTemplate();
+    setRoman(newRoman);
+    setChords(generateProgression(key, newRoman));
+  };
   const editChord = (i:number, value:string) => {
     const arr = [...chords]; arr[i] = value; setChords(arr);
   };
@@ -40,9 +45,8 @@ export default function Home({ user }: { user: any | null }) {
       <h1>Four-Chord Generator</h1>
       <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
         <label>Key: <select value={key} onChange={e=>setKey(e.target.value)}>{KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select></label>
-        <label>Template: <select value={roman} onChange={e=>setRoman(e.target.value)}>{ROMAN_TEMPLATES.map(r=><option key={r} value={r}>{r}</option>)}</select></label>
         <label>Name: <input value={name} onChange={e=>setName(e.target.value)} /></label>
-        <button onClick={regenerate}>Generate</button>
+        <button onClick={regenerate}>Randomize</button>
         {user && <button onClick={save}>Save</button>}
         <button onClick={exportPNG}>Export PNG</button>
         <button onClick={exportPDF}>Export PDF</button>
