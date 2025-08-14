@@ -37,7 +37,7 @@ const OPEN_CHORDS: Record<string, Chord> = {
   G: {
     fingers: [
       [1, 3],
-      [2, OPEN],
+      [2, 3],
       [3, OPEN],
       [4, OPEN],
       [5, 2],
@@ -99,6 +99,39 @@ const OPEN_CHORDS: Record<string, Chord> = {
       [6, 1],
     ],
     barres: [{ fromString: 6, toString: 1, fret: 1, text: "1" }],
+  },
+  B: {
+    fingers: [
+      [1, 2],
+      [2, 4],
+      [3, 4],
+      [4, 4],
+      [5, 2],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 2, text: "2" }],
+  },
+  Bm: {
+    fingers: [
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 4],
+      [5, 2],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 2, text: "2" }],
+  },
+  "C#m": {
+    fingers: [
+      [1, 4],
+      [2, 5],
+      [3, 6],
+      [4, 6],
+      [5, 4],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 4, text: "4" }],
   },
 };
 
@@ -195,7 +228,10 @@ function reduceFormula(formula: number[]): number[][] {
     for (let i = idx; i < optional.length; i++) {
       const iv = optional[i];
       if (curr.includes(iv)) {
-        helper(curr.filter((n) => n !== iv), i + 1);
+        helper(
+          curr.filter((n) => n !== iv),
+          i + 1,
+        );
       }
     }
   }
