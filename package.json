@@ -11,7 +11,7 @@
     "format": "prettier -w .",
     "lint": "echo \"(add your linter of choice)\"",
     "local": "bash scripts/run-local.sh",
-    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"esnext\",\"moduleResolution\":\"node\"}' TS_NODE_TRANSPILE_ONLY=1 node --test --loader ts-node/esm client/src/lib/__tests__/diagrams.test.ts"
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"esnext\",\"moduleResolution\":\"node\",\"jsx\":\"react-jsx\"}' TS_NODE_TRANSPILE_ONLY=1 node --test --loader ts-node/esm client/src/lib/__tests__/diagrams.test.ts client/src/components/ChordDiagram.test.ts"
   },
   "devDependencies": {
     "prettier": "^3.3.3"
