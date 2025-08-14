@@ -247,29 +247,48 @@ function reduceFormula(formula: number[]): number[][] {
     .sort((a, b) => b.length - a.length);
 }
 
-function searchFingering(notes: number[], bass: number | null): Chord | null {
-  const maxFret = 12;
+export interface SearchOptions {
+  /** Highest fret considered when searching for fingerings */
+  maxFret?: number;
+  /** Maximum distance between lowest and highest fretted note */
+  maxSpan?: number;
+  /** Limit of explored fingerings to trade performance for quality */
+  maxSearch?: number;
+}
+
+function searchFingering(
+  notes: number[],
+  bass: number | null,
+  opts: SearchOptions = {}
+): Chord | null {
+  const maxFret = opts.maxFret ?? 12;
+  const maxSpan = opts.maxSpan ?? 4;
+  const maxSearch = opts.maxSearch ?? 10000;
   const windowSize = Math.max(4, Math.min(6, notes.length));
   for (let base = 0; base <= maxFret - windowSize; base++) {
     const options: number[][] = [];
     for (let s = 0; s < 6; s++) {
       const open = STRING_PITCHES[s];
-      const opts = [-1];
+      const optsArr = [-1];
       for (let fret = 0; fret <= maxFret; fret++) {
         const pitch = (open + fret) % 12;
         if (notes.includes(pitch)) {
           if (fret === 0) {
-            opts.push(0);
+            optsArr.push(0);
           } else if (fret >= base && fret <= base + windowSize) {
-            opts.push(fret);
+            optsArr.push(fret);
           }
         }
       }
-      options.push(opts);
+      // sort so open strings and lower frets are tried first
+      options.push(optsArr.sort((a, b) => a - b));
     }
     const assign = new Array<number>(6).fill(-1);
-    let result: number[] | null = null;
+    let best: number[] | null = null;
+    let bestScore = Infinity;
+    let searched = 0;
     function dfs(i: number, used: Set<number>) {
+      if (searched >= maxSearch) return;
       if (i === 6) {
         const sounding = assign.filter((f) => f >= 0).length;
         if (sounding < 3) return;
@@ -293,7 +312,18 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
         if (covered.size < 3) return;
         for (const n of notes) if (!covered.has(n)) return;
         if (!bassFound || (bass !== null && lowestPitchClass !== bass)) return;
-        result = assign.slice();
+        const positives = assign.filter((f) => f > 0);
+        const maxUsed = positives.length ? Math.max(...positives) : 0;
+        const minUsed = positives.length ? Math.min(...positives) : 0;
+        const span = positives.length ? maxUsed - minUsed : 0;
+        if (span > maxSpan) return;
+        const openCount = assign.filter((f) => f === 0).length;
+        const score = maxUsed * 2 + span - openCount;
+        searched++;
+        if (score < bestScore) {
+          bestScore = score;
+          best = assign.slice();
+        }
         return;
       }
       for (const fret of options[i]) {
@@ -302,12 +332,11 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
         if (next.size > 4) continue;
         assign[i] = fret;
         dfs(i + 1, next);
-        if (result) return;
       }
     }
     dfs(0, new Set());
-    if (result) {
-      const arr = result;
+    if (best) {
+      const arr = best;
       const fingers: [number, number | typeof OPEN | typeof SILENT][] = [];
       for (let i = 0; i < 6; i++) {
         const fret = arr[5 - i];
@@ -324,7 +353,7 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
   return null;
 }
 
-export function getChordDiagram(name: string): Chord | null {
+export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord | null {
   const [rawMain, rawBass] = name.split("/");
   const main = rawMain.trim();
   const bassToken = rawBass ? rawBass.trim() : null;
@@ -366,7 +395,7 @@ export function getChordDiagram(name: string): Chord | null {
   for (const f of formulas) {
     const notes = Array.from(new Set(f.map((i) => (rootIndex + i) % 12)));
     if (bassIndex !== null && !notes.includes(bassIndex)) notes.push(bassIndex);
-    const chord = searchFingering(notes, bassIndex);
+    const chord = searchFingering(notes, bassIndex, opts);
     if (chord) return chord;
   }
   return null;
