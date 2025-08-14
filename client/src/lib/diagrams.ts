@@ -102,7 +102,7 @@ const OPEN_CHORDS: Record<string, Chord> = {
   },
 };
 
-const CHROMA = [
+const CHROMA_SHARP = [
   "C",
   "C#",
   "D",
@@ -114,6 +114,21 @@ const CHROMA = [
   "G#",
   "A",
   "A#",
+  "B",
+];
+
+const CHROMA_FLAT = [
+  "C",
+  "Db",
+  "D",
+  "Eb",
+  "E",
+  "F",
+  "Gb",
+  "G",
+  "Ab",
+  "A",
+  "Bb",
   "B",
 ];
 
@@ -151,16 +166,15 @@ const CHORD_FORMULAS: Record<string, number[]> = {
 };
 
 function normalizeRoot(raw: string): string {
-  return raw
-    .replace("Db", "C#")
-    .replace("Eb", "D#")
-    .replace("Gb", "F#")
-    .replace("Ab", "G#")
-    .replace("Bb", "A#")
+  const base = raw
     .replace("Cb", "B")
     .replace("Fb", "E")
     .replace("E#", "F")
     .replace("B#", "C");
+  if (CHROMA_SHARP.includes(base) || CHROMA_FLAT.includes(base)) {
+    return base;
+  }
+  return base;
 }
 
 function getFormula(suffix: string): number[] | null {
@@ -280,10 +294,19 @@ export function getChordDiagram(name: string): Chord | null {
   const root = normalizeRoot(rawRoot);
   const openName = root + suffix;
   if (!bassToken && OPEN_CHORDS[openName]) return OPEN_CHORDS[openName];
-  const rootIndex = CHROMA.indexOf(root);
+  const rootIndex =
+    CHROMA_SHARP.indexOf(root) >= 0
+      ? CHROMA_SHARP.indexOf(root)
+      : CHROMA_FLAT.indexOf(root);
   const formula = getFormula(suffix);
   if (rootIndex < 0 || !formula) return null;
-  const bassIndex = bassToken ? CHROMA.indexOf(normalizeRoot(bassToken)) : null;
+  const bassIndex = bassToken
+    ? (() => {
+        const norm = normalizeRoot(bassToken);
+        const sharpIdx = CHROMA_SHARP.indexOf(norm);
+        return sharpIdx >= 0 ? sharpIdx : CHROMA_FLAT.indexOf(norm);
+      })()
+    : null;
   if (bassToken && bassIndex === -1) return null;
   const formulas = [formula];
   if (formula.length > 4) {
