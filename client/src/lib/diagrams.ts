@@ -213,7 +213,8 @@ function reduceFormula(formula: number[]): number[][] {
 
 function searchFingering(notes: number[], bass: number | null): Chord | null {
   const maxFret = 12;
-  for (let base = 0; base <= maxFret - 4; base++) {
+  const windowSize = Math.max(4, Math.min(6, notes.length));
+  for (let base = 0; base <= maxFret - windowSize; base++) {
     const options: number[][] = [];
     for (let s = 0; s < 6; s++) {
       const open = STRING_PITCHES[s];
@@ -222,8 +223,8 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
         const pitch = (open + fret) % 12;
         if (notes.includes(pitch)) {
           if (fret === 0) {
-            if (base <= 1) opts.push(0);
-          } else if (fret >= base && fret <= base + 4) {
+            opts.push(0);
+          } else if (fret >= base && fret <= base + windowSize) {
             opts.push(fret);
           }
         }
@@ -253,6 +254,7 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
             if (bass !== null && pitch === bass) bassFound = true;
           }
         }
+        if (covered.size < 3) return;
         for (const n of notes) if (!covered.has(n)) return;
         if (!bassFound || (bass !== null && lowestPitchClass !== bass)) return;
         result = assign.slice();
