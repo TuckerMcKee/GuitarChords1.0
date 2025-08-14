@@ -37,7 +37,7 @@ const OPEN_CHORDS: Record<string, Chord> = {
   G: {
     fingers: [
       [1, 3],
-      [2, OPEN],
+      [2, 3],
       [3, OPEN],
       [4, OPEN],
       [5, 2],
@@ -99,6 +99,39 @@ const OPEN_CHORDS: Record<string, Chord> = {
       [6, 1],
     ],
     barres: [{ fromString: 6, toString: 1, fret: 1, text: "1" }],
+  },
+  B: {
+    fingers: [
+      [1, 2],
+      [2, 4],
+      [3, 4],
+      [4, 4],
+      [5, 2],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 2, text: "2" }],
+  },
+  Bm: {
+    fingers: [
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 4],
+      [5, 2],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 2, text: "2" }],
+  },
+  "C#m": {
+    fingers: [
+      [1, 4],
+      [2, 5],
+      [3, 6],
+      [4, 6],
+      [5, 4],
+      [6, SILENT],
+    ],
+    barres: [{ fromString: 5, toString: 1, fret: 4, text: "4" }],
   },
 };
 
@@ -165,7 +198,7 @@ const CHORD_FORMULAS: Record<string, number[]> = {
   maj13: [0, 4, 7, 11, 14, 17, 21],
 };
 
-function normalizeRoot(raw: string): string {
+export function normalizeRoot(raw: string): string | null {
   const base = raw
     .replace("Cb", "B")
     .replace("Fb", "E")
@@ -174,7 +207,7 @@ function normalizeRoot(raw: string): string {
   if (CHROMA_SHARP.includes(base) || CHROMA_FLAT.includes(base)) {
     return base;
   }
-  return base;
+  return null;
 }
 
 function getFormula(suffix: string): number[] | null {
@@ -195,7 +228,10 @@ function reduceFormula(formula: number[]): number[][] {
     for (let i = idx; i < optional.length; i++) {
       const iv = optional[i];
       if (curr.includes(iv)) {
-        helper(curr.filter((n) => n !== iv), i + 1);
+        helper(
+          curr.filter((n) => n !== iv),
+          i + 1,
+        );
       }
     }
   }
@@ -322,9 +358,16 @@ export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord |
   const main = rawMain.trim();
   const bassToken = rawBass ? rawBass.trim() : null;
   const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
-  if (!match) return null;
+  if (!match) {
+    console.error(`Invalid chord name: ${name}`);
+    return null;
+  }
   const [, rawRoot, suffix] = match;
   const root = normalizeRoot(rawRoot);
+  if (!root) {
+    console.error(`Invalid root note: ${rawRoot}`);
+    return null;
+  }
   const openName = root + suffix;
   if (!bassToken && OPEN_CHORDS[openName]) return OPEN_CHORDS[openName];
   const rootIndex =
@@ -336,11 +379,15 @@ export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord |
   const bassIndex = bassToken
     ? (() => {
         const norm = normalizeRoot(bassToken);
+        if (!norm) {
+          console.error(`Invalid bass note: ${bassToken}`);
+          return null;
+        }
         const sharpIdx = CHROMA_SHARP.indexOf(norm);
         return sharpIdx >= 0 ? sharpIdx : CHROMA_FLAT.indexOf(norm);
       })()
     : null;
-  if (bassToken && bassIndex === -1) return null;
+  if (bassToken && bassIndex === null) return null;
   const formulas = [formula];
   if (formula.length > 4) {
     formulas.push(...reduceFormula(formula));
