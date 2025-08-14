@@ -116,14 +116,16 @@ function parseDegreeChain(chain: string, key: string) {
   if (!info) return null;
   let semis = info.semis;
   let minor = info.minor;
+  let preferFlats = target.includes("b") || FLAT_KEYS.includes(key);
   while (parts.length) {
-    const p = getSingleDegree(parts.pop() as string);
+    const token = parts.pop() as string;
+    const p = getSingleDegree(token);
     if (!p) return null;
     semis += p.semis;
     minor = p.minor;
+    if (token.includes("b")) preferFlats = true;
   }
   semis = ((semis % 12) + 12) % 12;
-  const preferFlats = target.includes("b") || FLAT_KEYS.includes(key);
   return { semis, minor, preferFlats };
 }
 
