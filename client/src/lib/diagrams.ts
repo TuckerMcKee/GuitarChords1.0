@@ -289,7 +289,9 @@ function searchFingering(notes: number[], bass: number | null): Chord | null {
 }
 
 export function getChordDiagram(name: string): Chord | null {
-  const [main, bassToken] = name.split("/");
+  const [rawMain, rawBass] = name.split("/");
+  const main = rawMain.trim();
+  const bassToken = rawBass ? rawBass.trim() : null;
   const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match) return null;
   const [, rawRoot, suffix] = match;
