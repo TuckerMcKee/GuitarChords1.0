@@ -199,7 +199,9 @@ const CHORD_FORMULAS: Record<string, number[]> = {
 };
 
 export function normalizeRoot(raw: string): string | null {
-  const base = raw
+  if (!raw) return null;
+  const normalized = raw[0].toUpperCase() + raw.slice(1);
+  const base = normalized
     .replace("Cb", "B")
     .replace("Fb", "E")
     .replace("E#", "F")
@@ -357,12 +359,13 @@ export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord |
   const [rawMain, rawBass] = name.split("/");
   const main = rawMain.trim();
   const bassToken = rawBass ? rawBass.trim() : null;
-  const match = main.match(/^([A-G](?:#|b)?)(.*)$/);
+  const match = main.match(/^([A-Ga-g](?:#|b)?)(.*)$/);
   if (!match) {
     console.error(`Invalid chord name: ${name}`);
     return null;
   }
-  const [, rawRoot, suffix] = match;
+  let [, rawRoot, suffix] = match;
+  rawRoot = rawRoot[0].toUpperCase() + rawRoot.slice(1);
   const root = normalizeRoot(rawRoot);
   if (!root) {
     console.error(`Invalid root note: ${rawRoot}`);
@@ -375,7 +378,14 @@ export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord |
       ? CHROMA_SHARP.indexOf(root)
       : CHROMA_FLAT.indexOf(root);
   const formula = getFormula(suffix);
-  if (rootIndex < 0 || !formula) return null;
+  if (rootIndex < 0) {
+    console.error(`Invalid root note: ${rawRoot}`);
+    return null;
+  }
+  if (!formula) {
+    console.error(`Invalid chord suffix: ${suffix}`);
+    return null;
+  }
   const bassIndex = bassToken
     ? (() => {
         const norm = normalizeRoot(bassToken);
@@ -398,5 +408,6 @@ export function getChordDiagram(name: string, opts: SearchOptions = {}): Chord |
     const chord = searchFingering(notes, bassIndex, opts);
     if (chord) return chord;
   }
+  console.error(`No chord diagram found for: ${name}`);
   return null;
 }
